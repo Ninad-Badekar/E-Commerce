@@ -3,9 +3,9 @@ from sqlalchemy import desc, func
 from sqlalchemy.orm import Session
 from typing import List, Optional, Union
 import schemas, crud
-from database import get_db
+from Products.database import get_db
 from data_generator import DataGenerator
-from logger import log
+from Products.logger import log
 import models
 
 router = APIRouter(prefix="/products", tags=["Products"])
