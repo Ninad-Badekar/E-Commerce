@@ -1,1 +1,0 @@
-- Practiced incremental loading 
