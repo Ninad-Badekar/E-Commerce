@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 
-from app.models import Cart, CartItem, Inventory
+from app.models import Cart, CartItem
 from app.carts.schemas import CartCreate, CartItemCreate
 
 def create_cart(db: Session, cart_in: CartCreate) -> Cart:
