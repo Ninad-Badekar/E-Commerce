@@ -2,14 +2,14 @@ import asyncio
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from apscheduler.schedulers.background import BackgroundScheduler
-from database import engine, Base, SessionLocal
-from crud import get_all_products
-from routers import product_router
-from data_generator import DataGenerator
+from Products.database import engine, Base, SessionLocal
+from Products.crud import get_all_products
+from Products.routers import product_router
+from Products.data_generator import DataGenerator
 import os
 from dotenv import load_dotenv
-from logger import log
-import models
+from Products.logger import log
+import Products.models
 import random
 
 load_dotenv()

@@ -2,8 +2,8 @@ import random
 from typing import List, Dict, Any
 from faker import Faker
 from sqlalchemy.orm import Session
-from models import Product, Category, PriceHistory
-from logger import log
+from Products.models import Product, Category, PriceHistory
+from Products.logger import log
 
 class DataGenerator:
     def __init__(self):

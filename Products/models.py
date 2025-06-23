@@ -2,7 +2,7 @@ from typing import Optional
 from sqlalchemy import Column, Integer, String, Float, ForeignKey, JSON, DateTime, Numeric
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from database import Base
+from Products.database import Base
 from datetime import datetime, timezone
 
 def utc_now():

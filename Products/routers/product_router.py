@@ -2,21 +2,21 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import desc, func
 from sqlalchemy.orm import Session
 from typing import List, Optional, Union
-import schemas, crud
+import Products.schemas, Products.crud
 from Products.database import get_db
-from data_generator import DataGenerator
+from Products.data_generator import DataGenerator
 from Products.logger import log
-import models
+import Products.models
 
 router = APIRouter(prefix="/products", tags=["Products"])
 generator = DataGenerator()
 
-@router.post("/", response_model=schemas.Product)
-def create_product(product: schemas.ProductCreate, db: Session = Depends(get_db)):
+@router.post("/", response_model=Products.schemas.Product)
+def create_product(product: Products.schemas.ProductCreate, db: Session = Depends(get_db)):
     log.info(f"Creating product: {product.name}")
-    return crud.create_product_manual(db, product)
+    return Products.crud.create_product_manual(db, product)
 
-@router.get("/", response_model=schemas.ProductListResponse)
+@router.get("/", response_model=Products.schemas.ProductListResponse)
 def get_all_products(
     db: Session = Depends(get_db),
     page: int = Query(1, ge=1, description="Page number"),
@@ -39,7 +39,7 @@ def get_all_products(
         'in_stock_only': in_stock_only
     }
     
-    total, products = crud.get_paginated_products(
+    total, products = Products.crud.get_paginated_products(
         db, skip, per_page, search, sort_by, sort_dir, filters
     )
     
@@ -70,19 +70,19 @@ def get_all_products(
         "products": clean_products
     }
 
-@router.get("/{product_id}", response_model=schemas.Product)
+@router.get("/{product_id}", response_model=Products.schemas.Product)
 def get_product_by_id(product_id: int, db: Session = Depends(get_db)):
     log.info(f"Fetching product by ID: {product_id}")
-    product = crud.get_product_by_id(db, product_id)
+    product = Products.crud.get_product_by_id(db, product_id)
     if not product:
         log.warning(f"Product not found: ID {product_id}")
         raise HTTPException(status_code=404, detail="Product not found")
     return product
 
-@router.post("/auto-generate", response_model=List[schemas.Product])
+@router.post("/auto-generate", response_model=List[Products.schemas.Product])
 def auto_generate_products(count: int = 1, db: Session = Depends(get_db)):
     log.info(f"Auto-generating {count} products")
-    categories = crud.get_all_categories(db)
+    categories = Products.crud.get_all_categories(db)
     return generator.create_products(db, categories, count)
 
 from fastapi import Query
@@ -93,7 +93,7 @@ def update_all_prices(
     db: Session = Depends(get_db)
 ):
     log.info(f"Updating prices for {count} product(s)")
-    products = crud.get_all_products(db)
+    products = Products.crud.get_all_products(db)
     if not products:
         log.warning("No products found to update prices")
         return {"message": "No products found to update"}
@@ -101,35 +101,35 @@ def update_all_prices(
     return {"message": f"Price updated for {min(count, len(products))} products"}
 
 
-@router.patch("/{product_id}", response_model=schemas.Product)
+@router.patch("/{product_id}", response_model=Products.schemas.Product)
 def update_product(
     product_id: str, 
-    product_update: schemas.ProductUpdate,
+    product_update: Products.schemas.ProductUpdate,
     db: Session = Depends(get_db)
 ):
 
     product = None
     if product_id.isdigit():
-        product = crud.get_product_by_id(db, int(product_id))
+        product = Products.crud.get_product_by_id(db, int(product_id))
     if not product:
-        product = crud.get_product_by_name(db, product_id)
+        product = Products.crud.get_product_by_name(db, product_id)
     if not product:
-        product = crud.get_product_by_brand(db, product_id)
+        product = Products.crud.get_product_by_brand(db, product_id)
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
 
     if product_update.category_id is not None:
-        valid_category_ids = [cat.id for cat in crud.get_all_categories(db)]
+        valid_category_ids = [cat.id for cat in Products.crud.get_all_categories(db)]
         if product_update.category_id not in valid_category_ids:
             raise HTTPException(status_code=400, detail="Invalid category_id")
 
-    updated_product = crud.update_product(db, product.id, product_update)
+    updated_product = Products.crud.update_product(db, product.id, product_update)
 
     return updated_product
 
-@router.get("/{product_id}/inventory", response_model=schemas.Inventory)
+@router.get("/{product_id}/inventory", response_model=Products.schemas.Inventory)
 def get_product_inventory(product_id: int, db: Session = Depends(get_db)):
-    inventory = crud.get_inventory_by_product_id(db, product_id)
+    inventory = Products.crud.get_inventory_by_product_id(db, product_id)
     if not inventory:
         raise HTTPException(status_code=404, detail="Inventory not found")
     return inventory
@@ -143,7 +143,7 @@ def adjust_inventory(
     db: Session = Depends(get_db)
 ):
     try:
-        updated_inventory = crud.update_inventory_quantity(
+        updated_inventory = Products.crud.update_inventory_quantity(
             db, product_id, quantity_delta, reason, order_id
         )
         return {
@@ -153,18 +153,18 @@ def adjust_inventory(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@router.get("/{product_id}/stock-movements", response_model=List[schemas.StockMovement])
+@router.get("/{product_id}/stock-movements", response_model=List[Products.schemas.StockMovement])
 def get_stock_movements(product_id: int, db: Session = Depends(get_db)):
-    return crud.get_stock_movements_for_product(db, product_id)
+    return Products.crud.get_stock_movements_for_product(db, product_id)
 
-@router.patch("/{product_id}/inventory/settings", response_model=schemas.Inventory)
+@router.patch("/{product_id}/inventory/settings", response_model=Products.schemas.Inventory)
 def update_inventory_settings(
     product_id: int,
-    inventory_update: schemas.InventoryUpdate,
+    inventory_update: Products.schemas.InventoryUpdate,
     db: Session = Depends(get_db)
 ):
     try:
-        updated_inventory = crud.update_inventory_settings(
+        updated_inventory = Products.crud.update_inventory_settings(
             db=db,
             product_id=product_id,
             update_data=inventory_update
@@ -187,7 +187,7 @@ def reserve_products(
         reserved_items = []
         
         for item in reservations:
-            inventory = crud.get_inventory_by_product_id(db, item["product_id"])
+            inventory = Products.crud.get_inventory_by_product_id(db, item["product_id"])
             if not inventory or inventory.quantity_available < item["quantity"]:
                 db.rollback()
                 raise HTTPException(
@@ -196,11 +196,11 @@ def reserve_products(
                 )
         
         for item in reservations:
-            inventory = crud.get_inventory_by_product_id(db, item["product_id"])
+            inventory = Products.crud.get_inventory_by_product_id(db, item["product_id"])
             inventory.quantity_available -= item["quantity"]
             inventory.quantity_reserve += item["quantity"]
             
-            movement = models.StockMovement(
+            movement = Products.models.StockMovement(
                 product_id=item["product_id"],
                 order_id=item["order_id"],
                 change=-item["quantity"],
@@ -239,12 +239,12 @@ def release_products(
         released_items = []
         
         for item in reservations:
-            inventory = crud.get_inventory_by_product_id(db, item["product_id"])
+            inventory = Products.crud.get_inventory_by_product_id(db, item["product_id"])
             if inventory and inventory.quantity_reserve >= item["quantity"]:
                 inventory.quantity_reserve -= item["quantity"]
                 inventory.quantity_available += item["quantity"]
                 
-                movement = models.StockMovement(
+                movement = Products.models.StockMovement(
                     product_id=item["product_id"],
                     order_id=item["order_id"],
                     change=item["quantity"],
@@ -282,11 +282,11 @@ def finalize_products(
         finalized_items = []
         
         for item in reservations:
-            inventory = crud.get_inventory_by_product_id(db, item["product_id"])
+            inventory = Products.crud.get_inventory_by_product_id(db, item["product_id"])
             if inventory and inventory.quantity_reserve >= item["quantity"]:
                 inventory.quantity_reserve -= item["quantity"]
                 
-                movement = models.StockMovement(
+                movement = Products.models.StockMovement(
                     product_id=item["product_id"],
                     order_id=item["order_id"],
                     change=-item["quantity"],
@@ -316,10 +316,10 @@ def get_featured_products(
     db: Session = Depends(get_db)
 ):
     """Get featured/popular products for homepage"""
-    products = db.query(models.Product)\
-        .join(models.Inventory)\
-        .filter(models.Inventory.quantity_available > 0)\
-        .order_by(desc(models.Product.created_at))\
+    products = db.query(Products.models.Product)\
+        .join(Products.models.Inventory)\
+        .filter(Products.models.Inventory.quantity_available > 0)\
+        .order_by(desc(Products.models.Product.created_at))\
         .limit(limit).all()
     
     return [
@@ -341,9 +341,9 @@ def get_product_recommendations(
     db: Session = Depends(get_db)
 ):
     """Get personalized product recommendations"""
-    products = db.query(models.Product)\
-        .join(models.Inventory)\
-        .filter(models.Inventory.quantity_available > 0)\
+    products = db.query(Products.models.Product)\
+        .join(Products.models.Inventory)\
+        .filter(Products.models.Inventory.quantity_available > 0)\
         .order_by(func.random())\
         .limit(limit).all()
     
