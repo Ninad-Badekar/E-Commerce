@@ -13,7 +13,6 @@ from dotenv import load_dotenv
 from urllib.parse import urlparse
 import pymysql
 
-# External imports
 from Products.schemas import ProductSummary
 from Orders.app.orders.schemas import OrderResponse, OrderStatusUpdate, CartItemResponse
 
