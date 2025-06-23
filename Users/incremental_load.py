@@ -20,7 +20,7 @@ ADMIN_PASS = os.getenv("ADMIN_PASSWORD", "adminpass")
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(bind=engine)
 
-API_BASE = "http://localhost:8001"
+API_BASE = "http://localhost:8000"
 USERS_ENDPOINT = f"{API_BASE}/users"
 TOKEN_ENDPOINT = f"{API_BASE}/token"
 
