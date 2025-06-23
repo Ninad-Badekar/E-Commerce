@@ -20,7 +20,9 @@ from Orders.app.orders.schemas import OrderResponse, OrderStatusUpdate, CartItem
 load_dotenv()
 app = FastAPI(description='User Data')
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+from Products.routers.product_router import router as products_router
 
+app.include_router(products_router)
 SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
@@ -162,6 +164,7 @@ def get_user_products(user_id: int, current_user: str = Depends(get_current_user
     if current_user != get_user_email_by_id(user_id):
         raise HTTPException(status_code=403, detail="Not authorized")
     return [product for product in products if getattr(product, 'owner_id', None) == user_id]
+
 
 @app.get("/users/{user_id}/cart", response_model=List[CartItemResponse])
 def get_user_cart(user_id: int, current_user: str = Depends(get_current_user)):
