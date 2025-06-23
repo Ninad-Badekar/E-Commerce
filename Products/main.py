@@ -23,7 +23,7 @@ def scheduled_generate_product():
     try:
         categories = generator.get_categories(db)
         if categories:
-            count = random.randint(10, 100)
+            count = random.randint(10,60)
             log.info(f"Generating {count} new products...")
             generator.create_products(db, categories, count=count)
     except Exception as e:
@@ -85,8 +85,8 @@ async def lifespan(app: FastAPI):
     if ENABLE_SCHEDULER:
         log.info("Scheduler is enabled.")
         scheduler.add_job(scheduled_generate_product, "interval", seconds=30, id="generate_product")
-        scheduler.add_job(scheduled_price_update, "interval", seconds=60, id="price_update")
-        scheduler.add_job(scheduled_stock_update, "interval", seconds=90, id="stock_update")
+        scheduler.add_job(scheduled_price_update, "interval", seconds=600, id="price_update")
+        scheduler.add_job(scheduled_stock_update, "interval", seconds=900, id="stock_update")
         scheduler.start()
         log.info("Scheduler jobs started.")
     else:
