@@ -14,7 +14,6 @@ import random
 
 load_dotenv()
 
-# Initialize scheduler and generator
 scheduler = BackgroundScheduler()
 generator = DataGenerator()
 
@@ -104,15 +103,12 @@ async def lifespan(app: FastAPI):
             log.info("Scheduler shutdown complete.")
 
 
-
-# Create FastAPI app
 app = FastAPI(
     title="E-commerce Product API", 
     version="1.0",
     lifespan=lifespan
 )
 
-# Include routers
 app.include_router(product_router.router)
 
 @app.get("/")

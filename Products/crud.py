@@ -101,54 +101,41 @@ def get_paginated_products(
 def update_product(db: Session, product_id: int, product_update: schemas.ProductUpdate):
     """Update a product with only the provided fields"""
     
-    # Get the existing product - try by ID first, then by name, then by brand
     db_product = db.query(models.Product).filter(models.Product.id == product_id).first()
     
     if not db_product:
-        # Try by name
         db_product = db.query(models.Product).filter(models.Product.name == str(product_id)).first()
     
     if not db_product:
-        # Try by brand
         db_product = db.query(models.Product).filter(models.Product.brand == str(product_id)).first()
     
     if not db_product:
         return None
     
-    # Get only the fields that were actually provided (not None)
     update_data = product_update.model_dump(exclude_unset=True)
     
-    # Handle attributes separately for merging
     if 'attributes' in update_data:
         new_attributes = update_data.pop('attributes')
         
         if new_attributes is not None:
-            # Initialize existing attributes as empty dict if None
             existing_attributes = db_product.attributes or {}
             
             if isinstance(new_attributes, dict) and new_attributes:
-                # Merge with existing attributes instead of replacing
                 merged_attributes = dict(existing_attributes)
                 merged_attributes.update(new_attributes)
                 db_product.attributes = merged_attributes
             elif new_attributes == {}:
-                # If explicitly setting to empty dict, replace entirely
                 db_product.attributes = {}
-            # If new_attributes is empty dict or falsy, keep existing
-        # If new_attributes is None, keep existing attributes unchanged
-    
-    # Update other fields
+                
     for field, value in update_data.items():
         if hasattr(db_product, field):
             setattr(db_product, field, value)
     
     try:
-        # Save changes
         db.commit()
         db.refresh(db_product)
         return db_product
     except Exception as e:
-        # Rollback in case of any database errors
         db.rollback()
         raise e
     
@@ -206,7 +193,6 @@ def update_inventory_settings(
     db.refresh(inventory)
     return inventory
 
-# In crud.py - add proper stock management functions
 def reserve_stock(db: Session, product_id: int, quantity: int) -> bool:
     """Reserve stock with proper transaction management"""
     try:

@@ -6,7 +6,8 @@ from logger import log
 
 load_dotenv()
 
-DB_URL = f"mysql+pymysql://{os.getenv('DB_User')}:{os.getenv('DB_Password')}@{os.getenv('DB_Host')}:{os.getenv('DB_Port')}/{os.getenv('DB_Name')}"
+DB_URL = os.getenv("DATABASE_URL")
+
 
 try:
     engine = create_engine(DB_URL)

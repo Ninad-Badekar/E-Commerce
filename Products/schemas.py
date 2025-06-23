@@ -133,7 +133,6 @@ class Inventory(InventoryBase):
     class Config:
         from_attributes = True
 
-# In schemas.py
 class InventoryUpdate(BaseModel):
     quantity_available: Optional[int] = Field(None, ge=0, description="Cannot be negative")
     reorder_level: Optional[int] = Field(None, ge=0)

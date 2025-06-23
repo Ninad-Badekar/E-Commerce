@@ -85,7 +85,6 @@ class DataGenerator:
         log.info(f"Generating {count} product(s)...")
         products = []
         
-        # Map categories that require expiry dates
         categories_with_expiry = {
             "Food & Beverage", "Health & Beauty"
         }
@@ -98,7 +97,6 @@ class DataGenerator:
 
                 stock_quantity = random.randint(0, 1000)
 
-                # Inlined generate_product logic
                 product_data = {
                     "name": f"{self.faker.word().capitalize()} {self.faker.word().capitalize()}",
                     "price": round(
@@ -116,30 +114,27 @@ class DataGenerator:
 
                 product = Product(**product_data)
                 db.add(product)
-                db.flush()  # Ensure product.id is available for Inventory
+                db.flush()
 
-                # ✅ Create complete Inventory for this product
                 from models import Inventory
                 from datetime import datetime, timedelta
                 
-                # Determine expiry date based on category
                 if category.name in categories_with_expiry:
                     expiry_date = datetime.now() + timedelta(days=random.randint(30, 365))
                 else:
-                    expiry_date = datetime(9999, 12, 31)  # Sentinel for "no expiry"
+                    expiry_date = datetime(9999, 12, 31)
                 
                 inventory = Inventory(
                     product_id=product.id,
                     quantity_available=stock_quantity,
-                    quantity_reserve=random.randint(0, min(50, stock_quantity // 4)),  # Reserve some stock
-                    reorder_level=random.randint(5, 25),  # Random reorder level
-                    reorder_quantity=random.randint(20, 100),  # Random reorder quantity
-                    unit_cost=round(product_data["price"] * random.uniform(0.4, 0.7), 2),  # Cost is 40-70% of selling price
-                    last_restocked=datetime.now() - timedelta(days=random.randint(1, 30)),  # Recently restocked
+                    quantity_reserve=random.randint(0, min(50, stock_quantity // 4)),
+                    reorder_level=random.randint(5, 25),
+                    reorder_quantity=random.randint(20, 100),
+                    unit_cost=round(product_data["price"] * random.uniform(0.4, 0.7), 2), 
+                    last_restocked=datetime.now() - timedelta(days=random.randint(1, 30)),
                     expiry_date=expiry_date,
                     batch_number=self.faker.uuid4(),
                     location=self.faker.city()
-                    # last_updated will be set automatically by the model's default
                 )
                 db.add(inventory)
 
@@ -190,37 +185,33 @@ class DataGenerator:
             updated_count = 0
             
             for product in selected:
-                # Get the inventory record for this product
                 inventory = db.query(Inventory).filter(Inventory.product_id == product.id).first()
                 
                 if not inventory:
                     log.warning(f"No inventory record found for product {product.id}")
                     continue
                 
-                # Simulate stock changes with realistic business scenarios
                 scenario = random.choices(
                     ["normal_sales", "heavy_sales", "slow_sales", "restock"],
-                    weights=[60, 25, 10, 5]  # 60% normal, 25% heavy sales, 10% slow, 5% restock
+                    weights=[60, 25, 10, 5]
                 )[0]
                 
                 if scenario == "heavy_sales":
-                    change = random.randint(-100, -30)  # Big sales day
+                    change = random.randint(-100, -30)
                 elif scenario == "normal_sales":
-                    change = random.randint(-30, -5)   # Regular sales
+                    change = random.randint(-30, -5)
                 elif scenario == "slow_sales":
-                    change = random.randint(-10, 0)    # Slow day
-                else:  # restock
-                    change = random.randint(20, 100)   # Manual restock
+                    change = random.randint(-10, 0)
+                else:
+                    change = random.randint(20, 100) 
                 old_quantity = inventory.quantity_available
                 new_quantity = max(0, inventory.quantity_available + change)
                 
-                # Update inventory and product
                 inventory.quantity_available = new_quantity
                 product.stock_quantity = new_quantity
                 
-                # Auto-restock if below reorder level (but not always - 20% chance)
                 if new_quantity <= inventory.reorder_level and old_quantity > inventory.reorder_level:
-                    if random.random() < 0.2:  # Only 20% chance of auto-restock (was 30%)
+                    if random.random() < 0.2:
                         inventory.quantity_available += inventory.reorder_quantity
                         product.stock_quantity += inventory.reorder_quantity
                         inventory.last_restocked = datetime.now()

@@ -103,11 +103,11 @@ def update_all_prices(
 
 @router.patch("/{product_id}", response_model=schemas.Product)
 def update_product(
-    product_id: str,  # Accept string so name/brand are allowed
+    product_id: str, 
     product_update: schemas.ProductUpdate,
     db: Session = Depends(get_db)
 ):
-    # Try resolving product by ID, name, or brand
+
     product = None
     if product_id.isdigit():
         product = crud.get_product_by_id(db, int(product_id))
@@ -118,14 +118,12 @@ def update_product(
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
 
-    # Validate category exists if updating category
     if product_update.category_id is not None:
         valid_category_ids = [cat.id for cat in crud.get_all_categories(db)]
         if product_update.category_id not in valid_category_ids:
             raise HTTPException(status_code=400, detail="Invalid category_id")
 
-    # Perform update
-    updated_product = crud.update_product(db, product.id, product_update)  # use actual ID
+    updated_product = crud.update_product(db, product.id, product_update)
 
     return updated_product
 
@@ -177,19 +175,17 @@ def update_inventory_settings(
 
 @router.post("/reserve", response_model=dict)
 def reserve_products(
-    reservations: Union[List[dict], dict],  # Single item or list: {"product_id": 1, "quantity": 2}
+    reservations: Union[List[dict], dict],
     order_id: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     """Reserve single or multiple products for an order (atomic operation)"""
-    # Normalize input - convert single item to list
     if isinstance(reservations, dict):
         reservations = [reservations]
     
     try:
         reserved_items = []
         
-        # First, validate all items can be reserved
         for item in reservations:
             inventory = crud.get_inventory_by_product_id(db, item["product_id"])
             if not inventory or inventory.quantity_available < item["quantity"]:
@@ -199,15 +195,14 @@ def reserve_products(
                     detail=f"Insufficient stock for product {item['product_id']} (requested: {item['quantity']}, available: {inventory.quantity_available if inventory else 0})"
                 )
         
-        # Then reserve all items
         for item in reservations:
             inventory = crud.get_inventory_by_product_id(db, item["product_id"])
             inventory.quantity_available -= item["quantity"]
             inventory.quantity_reserve += item["quantity"]
             
-            # Add stock movement
             movement = models.StockMovement(
                 product_id=item["product_id"],
+                order_id=item["order_id"],
                 change=-item["quantity"],
                 reason=f"reserve_order_{order_id}" if order_id else "reserve"
             )
@@ -232,12 +227,11 @@ def reserve_products(
 
 @router.post("/release", response_model=dict)
 def release_products(
-    reservations: Union[List[dict], dict],  # Single item or list: {"product_id": 1, "quantity": 2}
+    reservations: Union[List[dict], dict],
     order_id: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     """Release single or multiple reserved products (e.g., if user cancels checkout)"""
-    # Normalize input - convert single item to list
     if isinstance(reservations, dict):
         reservations = [reservations]
     
@@ -250,9 +244,9 @@ def release_products(
                 inventory.quantity_reserve -= item["quantity"]
                 inventory.quantity_available += item["quantity"]
                 
-                # Add stock movement
                 movement = models.StockMovement(
                     product_id=item["product_id"],
+                    order_id=item["order_id"],
                     change=item["quantity"],
                     reason=f"release_order_{order_id}" if order_id else "release"
                 )
@@ -276,12 +270,11 @@ def release_products(
 
 @router.post("/finalize", response_model=dict)
 def finalize_products(
-    reservations: Union[List[dict], dict],  # Single item or list: {"product_id": 1, "quantity": 2}
+    reservations: Union[List[dict], dict],
     order_id: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     """Finalize single or multiple reserved products (convert reserves to sold)"""
-    # Normalize input - convert single item to list
     if isinstance(reservations, dict):
         reservations = [reservations]
     
@@ -292,11 +285,10 @@ def finalize_products(
             inventory = crud.get_inventory_by_product_id(db, item["product_id"])
             if inventory and inventory.quantity_reserve >= item["quantity"]:
                 inventory.quantity_reserve -= item["quantity"]
-                # Don't add back to available - it's sold
                 
-                # Add stock movement
                 movement = models.StockMovement(
                     product_id=item["product_id"],
+                    order_id=item["order_id"],
                     change=-item["quantity"],
                     reason=f"finalize_order_{order_id}" if order_id else "finalize"
                 )
@@ -324,7 +316,6 @@ def get_featured_products(
     db: Session = Depends(get_db)
 ):
     """Get featured/popular products for homepage"""
-    # Logic: products with high ratings or recent high sales
     products = db.query(models.Product)\
         .join(models.Inventory)\
         .filter(models.Inventory.quantity_available > 0)\
@@ -350,8 +341,6 @@ def get_product_recommendations(
     db: Session = Depends(get_db)
 ):
     """Get personalized product recommendations"""
-    # Placeholder: In real implementation, this would use ML/user behavior
-    # For now, return popular products from different categories
     products = db.query(models.Product)\
         .join(models.Inventory)\
         .filter(models.Inventory.quantity_available > 0)\

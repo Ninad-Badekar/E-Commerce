@@ -1,10 +1,10 @@
+from typing import Optional
 from sqlalchemy import Column, Integer, String, Float, ForeignKey, JSON, DateTime, Numeric
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from database import Base
 from datetime import datetime, timezone
 
-# Utility function to get current UTC time
 def utc_now():
     return datetime.now(timezone.utc)
 
@@ -75,11 +75,11 @@ class StockMovement(Base):
     __tablename__ = "stock_movements"
 
     id = Column(Integer, primary_key=True, index=True)
-    # order_id = Column(Integer, nullable=True)  # Simple approach
+    order_id = Column(Integer, nullable=True)
     product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
     change = Column(Integer, nullable=False)
     reason = Column(String(255), nullable=True)
     timestamp = Column(DateTime, default=utc_now)
 
     product = relationship("Product", back_populates="stock_movements")
-    # order_id: Optional[int] = None
+    order_id: Optional[int] = None
