@@ -4,3 +4,5 @@
 2025-06-23 19:46:43,880 - ERROR - Failed to create database engine: No module named 'MySQLdb'
 2025-06-23 19:46:58,412 - ERROR - Failed to create database engine: No module named 'MySQLdb'
 2025-06-23 19:47:02,868 - ERROR - Failed to create database engine: No module named 'MySQLdb'
+2025-06-23 19:47:53,649 - ERROR - Failed to create database engine: No module named 'MySQLdb'
+2025-06-23 19:48:45,132 - ERROR - Failed to create database engine: No module named 'MySQLdb'
