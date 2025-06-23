@@ -8,7 +8,6 @@ load_dotenv()
 
 DB_URL = os.getenv("DATABASE_URL")
 
-
 try:
     engine = create_engine(DB_URL)
     log.info("Database engine created successfully")
