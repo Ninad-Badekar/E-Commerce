@@ -4,6 +4,9 @@ from faker import Faker
 from sqlalchemy.orm import Session
 from Products.models import Product, Category, PriceHistory
 from Products.logger import log
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 class DataGenerator:
     def __init__(self):

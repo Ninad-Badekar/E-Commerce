@@ -4,6 +4,10 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from Products.database import Base
 from datetime import datetime, timezone
+from Orders.app.models import Order, Cart
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 def utc_now():
     return datetime.now(timezone.utc)
@@ -13,7 +17,7 @@ class Category(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), nullable=False, index=True)
-    parent_id = Column(Integer, ForeignKey('categories.id'), nullable=True)
+    parent_id = Column(Integer, ForeignKey('categories.id'), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
@@ -30,7 +34,7 @@ class Product(Base):
     price = Column(Numeric(10, 2), nullable=False, index=True)
     brand = Column(String(100), index=True)
     attributes = Column(JSON, nullable=True)
-    category_id = Column(Integer, ForeignKey('categories.id'))
+    category_id = Column(Integer, ForeignKey('categories.id'), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
@@ -75,11 +79,13 @@ class StockMovement(Base):
     __tablename__ = "stock_movements"
 
     id = Column(Integer, primary_key=True, index=True)
-    order_id = Column(Integer, nullable=True)
+    order_id = Column(Integer, ForeignKey(Order.order_id), nullable=False)
+    cart_id = Column(Integer, ForeignKey(Cart.cart_id), nullable=False)
     product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
     change = Column(Integer, nullable=False)
     reason = Column(String(255), nullable=True)
     timestamp = Column(DateTime, default=utc_now)
 
     product = relationship("Product", back_populates="stock_movements")
-    order_id: Optional[int] = None
+    order = relationship("Order", back_populates="stock_movements")
+    cart = relationship("Cart", back_populates="stock_movement") 

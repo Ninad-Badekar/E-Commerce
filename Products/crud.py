@@ -4,6 +4,9 @@ from sqlalchemy.orm import joinedload
 from typing import Tuple, Dict, Any, Optional, List
 import Products.models, Products.schemas
 from Products.logger import log
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 def create_product_manual(db: Session, product: Products.schemas.ProductCreate):
     try:
@@ -214,3 +217,22 @@ def reserve_stock(db: Session, product_id: int, quantity: int) -> bool:
     except Exception as e:
         db.rollback()
         raise e
+    
+def generate_recommendations(user_id: int, limit: int, db: Session) -> List[dict]:
+    products = db.query(Products.models.Product)\
+        .join(Products.models.Inventory)\
+        .filter(Products.models.Inventory.quantity_available > 0)\
+        .order_by(func.random())\
+        .limit(limit).all()
+    
+    return [
+        {
+            "id": p.id,
+            "name": p.name,
+            "price": float(p.price),
+            "brand": p.brand,
+            "category_name": p.category.name if p.category else "Unknown",
+            "rating": p.attributes.get("rating") if p.attributes else None,
+            "stock_quantity": p.inventory.quantity_available if p.inventory else 0
+        } for p in products
+    ]

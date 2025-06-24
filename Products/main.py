@@ -9,8 +9,10 @@ from Products.data_generator import DataGenerator
 import os
 from dotenv import load_dotenv
 from Products.logger import log
-import Products.models
 import random
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 load_dotenv()
 

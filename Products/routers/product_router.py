@@ -7,6 +7,9 @@ from Products.database import get_db
 from Products.data_generator import DataGenerator
 from Products.logger import log
 import Products.models
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 router = APIRouter(prefix="/products", tags=["Products"])
 generator = DataGenerator()
@@ -176,7 +179,7 @@ def update_inventory_settings(
 @router.post("/reserve", response_model=dict)
 def reserve_products(
     reservations: Union[List[dict], dict],
-    order_id: Optional[str] = None,
+    cart_id: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     """Reserve single or multiple products for an order (atomic operation)"""
@@ -202,9 +205,9 @@ def reserve_products(
             
             movement = Products.models.StockMovement(
                 product_id=item["product_id"],
-                order_id=item["order_id"],
+                cart_id=item["cart_id"],
                 change=-item["quantity"],
-                reason=f"reserve_order_{order_id}" if order_id else "reserve"
+                reason=f"reserve_order_{cart_id}" if cart_id else "reserve"
             )
             db.add(movement)
             reserved_items.append({
@@ -218,7 +221,7 @@ def reserve_products(
             "success": True,
             "reserved_items": reserved_items,
             "total_items": len(reserved_items),
-            "order_id": order_id,
+            "cart_id": cart_id,
             "message": f"Successfully reserved {len(reserved_items)} product(s)"
         }
     except Exception as e:
@@ -228,7 +231,7 @@ def reserve_products(
 @router.post("/release", response_model=dict)
 def release_products(
     reservations: Union[List[dict], dict],
-    order_id: Optional[str] = None,
+    cart_id: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     """Release single or multiple reserved products (e.g., if user cancels checkout)"""
@@ -246,9 +249,9 @@ def release_products(
                 
                 movement = Products.models.StockMovement(
                     product_id=item["product_id"],
-                    order_id=item["order_id"],
+                    cart_id=item["cart_id"],
                     change=item["quantity"],
-                    reason=f"release_order_{order_id}" if order_id else "release"
+                    reason=f"release_order_{cart_id}" if cart_id else "release"
                 )
                 db.add(movement)
                 released_items.append({
@@ -261,7 +264,7 @@ def release_products(
             "success": True,
             "released_items": released_items,
             "total_items": len(released_items),
-            "order_id": order_id,
+            "order_id": cart_id,
             "message": f"Successfully released {len(released_items)} product(s)"
         }
     except Exception as e:
@@ -340,21 +343,4 @@ def get_product_recommendations(
     limit: int = Query(5, ge=1, le=20),
     db: Session = Depends(get_db)
 ):
-    """Get personalized product recommendations"""
-    products = db.query(Products.models.Product)\
-        .join(Products.models.Inventory)\
-        .filter(Products.models.Inventory.quantity_available > 0)\
-        .order_by(func.random())\
-        .limit(limit).all()
-    
-    return [
-        {
-            "id": p.id,
-            "name": p.name,
-            "price": float(p.price),
-            "brand": p.brand,
-            "category_name": p.category.name if p.category else "Unknown",
-            "rating": p.attributes.get("rating") if p.attributes else None,
-            "stock_quantity": p.inventory.quantity_available if p.inventory else 0
-        } for p in products
-    ]
+    return Products.crud.generate_recommendations(user_id, limit, db)
